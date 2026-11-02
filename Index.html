@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liquidity AI Pro</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d16;color:#fff;font-family:Arial;padding:16px}
+h1{color:#35d6a0;text-align:center}
+.sub{text-align:center;color:#9ca8bb}
+.card{background:#151e2d;padding:15px;border-radius:13px;margin:14px 0}
+select,button{padding:13px;border:0;border-radius:8px;margin:5px 0;width:100%;font-size:15px}
+select{background:#263247;color:white}
+button{background:#13b981;color:#07140f;font-weight:bold}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat div{background:#202c40;padding:13px;border-radius:9px}
+.green{color:#39e6a1}.red{color:#ff6575}
+canvas{width:100%;height:240px}
+small{color:#aab5c5}
+</style>
+</head>
+<body>
+<h1>LIQUIDITY AI PRO</h1>
+<p class="sub">Indian Market • Smart Money Analysis</p>
+
+<div class="card">
+<label>Select Market</label>
+<select id="market">
+<option>NIFTY 50</option>
+<option>BANK NIFTY</option>
+</select>
+<label>Timeframe</label>
+<select id="tf">
+<option>5 Minute</option>
+<option>15 Minute</option>
+<option>1 Hour</option>
+<option>4 Hour</option>
+</select>
+<button onclick="analyze()">ANALYZE CHART</button>
+</div>
+
+<div class="card">
+<h3>Demo Candlestick Chart</h3>
+<canvas id="chart" width="700" height="300"></canvas>
+<small>Illustrative sample data only — not live prices.</small>
+</div>
+
+<div class="card">
+<h3>AI Analysis Result</h3>
+<div class="stat">
+<div>Trend<br><b id="trend">--</b></div>
+<div>Liquidity<br><b id="liq">--</b></div>
+<div>BOS / CHoCH<br><b id="structure">--</b></div>
+<div>Order Block<br><b id="ob">--</b></div>
+<div>Fair Value Gap<br><b id="fvg">--</b></div>
+<div>Signal<br><b id="signal">WAIT</b></div>
+</div>
+<h3>Trade Plan</h3>
+<p id="entry">Entry: --</p>
+<p id="sl">Stop Loss: --</p>
+<p id="target">Target: --</p>
+<p id="reason">Press Analyze Chart to begin.</p>
+</div>
+
+<script>
+const candles = [
+[100,104,98,102],[102,106,101,105],
+[105,108,103,104],[104,107,100,101],
+[101,103,97,99],[99,104,98,103],
+[103,109,102,108],[108,110,104,106],
+[106,108,101,103],[103,105,99,100],
+[100,105,98,104],[104,111,103,110],
+[110,113,107,108],[108,111,104,105],
+[105,107,100,102],[102,106,99,105],
+[105,112,104,111],[111,114,108,109],
+[109,112,106,107],[107,110,103,105],
+[105,108,101,102],[102,107,100,106],
+[106,113,105,112],[112,115,109,113]
+];
+
+function draw(){
+const c=document.getElementById("chart");
+const x=c.getContext("2d");
+x.clearRect(0,0,700,300);
+let hi=Math.max(...candles.map(v=>v[1]));
+let lo=Math.min(...candles.map(v=>v[2]));
+let scale=v=>270-(v-lo)/(hi-lo)*240;
+candles.forEach((v,i)=>{
+let px=12+i*28;
+let up=v[3]>=v[0];
+x.strokeStyle=up?"#24d99b":"#ff6475";
+x.fillStyle=x.strokeStyle;
+x.lineWidth=2;
+x.beginPath();
+x.moveTo(px+7,scale(v[1]));
+x.lineTo(px+7,scale(v[2]));
+x.stroke();
+x.fillRect(px,Math.min(scale(v[0]),scale(v[3])),
+14,Math.max(3,Math.abs(scale(v[0])-scale(v[3]))));
+});
+}
+
+function analyze(){
+let highs=candles.map(v=>v[1]);
+let lows=candles.map(v=>v[2]);
+let last=candles[candles.length-1];
+let previous=candles.slice(-6,-1);
+let recentHigh=Math.max(...previous.map(v=>v[1]));
+let recentLow=Math.min(...previous.map(v=>v[2]));
+
+let trend=last[3]>candles[0][0]?"Bullish":"Bearish";
+let sweepHigh=last[1]>recentHigh&&last[3]<recentHigh;
+let sweepLow=last[2]<recentLow&&last[3]>recentLow;
+
+let liquidity=sweepHigh?"Buy-side swept":
+sweepLow?"Sell-side swept":"No confirmed sweep";
+
+let signal=sweepLow?"POSSIBLE BUY":
+sweepHigh?"POSSIBLE SELL":"WAIT";
+
+document.getElementById("trend").textContent=trend;
+document.getElementById("liq").textContent=liquidity;
+document.getElementById("structure").textContent=
+last[3]>recentHigh?"Possible BOS Up":
+last[3]<recentLow?"Possible BOS Down":"No BOS";
+document.getElementById("ob").textContent="Demo zone — inspect chart";
+document.getElementById("fvg").textContent="Needs gap confirmation";
+document.getElementById("signal").textContent=signal;
+document.getElementById("entry").textContent=
+"Entry: Wait for confirmation";
+document.getElementById("sl").textContent=
+"Stop Loss: Not calculated";
+document.getElementById("target").textContent=
+"Target: Not calculated";
+document.getElementById("reason").textContent=
+"Market: "+document.getElementById("market").value+
+" | Timeframe: "+document.getElementById("tf").value+
+". Demo data only. Do not trade using this signal.";
+}
+draw();
+</script>
+</body>
+</html>
