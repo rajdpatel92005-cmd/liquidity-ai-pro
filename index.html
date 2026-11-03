@@ -1,26 +1,31 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Liquidity AI Pro</title>
+<title>Liquidity AI Pro V2</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080d16;color:#fff;font-family:Arial;padding:16px}
-h1{color:#35d6a0;text-align:center}
+body{margin:0;background:#080d16;color:white;font-family:Arial;padding:16px}
+h1{text-align:center;color:#35d6a0}
 .sub{text-align:center;color:#9ca8bb}
-.card{background:#151e2d;padding:15px;border-radius:13px;margin:14px 0}
-select,button{padding:13px;border:0;border-radius:8px;margin:5px 0;width:100%;font-size:15px}
+.card{background:#151e2d;padding:16px;border-radius:16px;margin:15px 0}
+label{display:block;margin:12px 0 6px}
+select,button{width:100%;padding:14px;border:0;border-radius:9px;font-size:16px}
 select{background:#263247;color:white}
-button{background:#13b981;color:#07140f;font-weight:bold}
-.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat div{background:#202c40;padding:13px;border-radius:9px}
+button{background:#13b981;color:#07140f;font-weight:bold;margin-top:15px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#202c40;padding:14px;border-radius:12px;min-width:0;overflow-wrap:anywhere}
+.stat b{display:block;margin-top:7px}
 .green{color:#39e6a1}.red{color:#ff6575}
-canvas{width:100%;height:240px}
+canvas{width:100%;height:250px}
 small{color:#aab5c5}
 </style>
 </head>
 <body>
-<h1>LIQUIDITY AI PRO</h1>
+
+<h1>LIQUIDITY AI PRO V2</h1>
 <p class="sub">Indian Market • Smart Money Analysis</p>
 
 <div class="card">
@@ -41,19 +46,23 @@ small{color:#aab5c5}
 
 <div class="card">
 <h3>Demo Candlestick Chart</h3>
-<canvas id="chart" width="700" height="300"></canvas>
+<canvas id="chart"></canvas>
 <small>Illustrative sample data only — not live prices.</small>
 </div>
 
 <div class="card">
-<h3>AI Analysis Result</h3>
-<div class="stat">
-<div>Trend<br><b id="trend">--</b></div>
-<div>Liquidity<br><b id="liq">--</b></div>
-<div>BOS / CHoCH<br><b id="structure">--</b></div>
-<div>Order Block<br><b id="ob">--</b></div>
-<div>Fair Value Gap<br><b id="fvg">--</b></div>
-<div>Signal<br><b id="signal">WAIT</b></div>
+<h2>AI Analysis Result</h2>
+<div class="grid">
+<div class="stat">Trend<b id="trend">--</b></div>
+<div class="stat">Liquidity<b id="liq">--</b></div>
+<div class="stat">BOS / CHoCH<b id="structure">--</b></div>
+<div class="stat">Order Block<b id="ob">--</b></div>
+<div class="stat">Fair Value Gap<b id="fvg">--</b></div>
+<div class="stat">Signal<b id="signal">WAIT</b></div>
+<div class="stat">Buy-side Liquidity<b id="bsl">--</b></div>
+<div class="stat">Sell-side Liquidity<b id="ssl">--</b></div>
+<div class="stat">Support<b id="support">--</b></div>
+<div class="stat">Resistance<b id="resistance">--</b></div>
 </div>
 <h3>Trade Plan</h3>
 <p id="entry">Entry: --</p>
@@ -63,7 +72,8 @@ small{color:#aab5c5}
 </div>
 
 <script>
-const candles = [
+// DEMO OHLC DATA: [Open, High, Low, Close]
+const candles=[
 [100,104,98,102],[102,106,101,105],
 [105,108,103,104],[104,107,100,101],
 [101,103,97,99],[99,104,98,103],
@@ -78,65 +88,128 @@ const candles = [
 [106,113,105,112],[112,115,109,113]
 ];
 
+function el(id){return document.getElementById(id)}
+function fmt(n){return Number(n).toFixed(2)}
+
 function draw(){
-const c=document.getElementById("chart");
-const x=c.getContext("2d");
-x.clearRect(0,0,700,300);
-let hi=Math.max(...candles.map(v=>v[1]));
-let lo=Math.min(...candles.map(v=>v[2]));
-let scale=v=>270-(v-lo)/(hi-lo)*240;
-candles.forEach((v,i)=>{
-let px=12+i*28;
-let up=v[3]>=v[0];
-x.strokeStyle=up?"#24d99b":"#ff6475";
-x.fillStyle=x.strokeStyle;
-x.lineWidth=2;
-x.beginPath();
-x.moveTo(px+7,scale(v[1]));
-x.lineTo(px+7,scale(v[2]));
-x.stroke();
-x.fillRect(px,Math.min(scale(v[0]),scale(v[3])),
-14,Math.max(3,Math.abs(scale(v[0])-scale(v[3]))));
+const c=el("chart"),ctx=c.getContext("2d");
+const w=c.clientWidth,h=250;
+c.width=w*devicePixelRatio;
+c.height=h*devicePixelRatio;
+ctx.scale(devicePixelRatio,devicePixelRatio);
+ctx.clearRect(0,0,w,h);
+let max=Math.max(...candles.map(x=>x[1]));
+let min=Math.min(...candles.map(x=>x[2]));
+let y=v=>h-15-(v-min)/(max-min)*(h-30);
+let gap=w/candles.length;
+candles.forEach((d,i)=>{
+let x=i*gap+gap/2;
+ctx.strokeStyle=d[3]>=d[0]?"#20d49a":"#ff6477";
+ctx.fillStyle=ctx.strokeStyle;
+ctx.lineWidth=1.5;
+ctx.beginPath();ctx.moveTo(x,y(d[1]));
+ctx.lineTo(x,y(d[2]));ctx.stroke();
+let top=y(Math.max(d[0],d[3]));
+let bottom=y(Math.min(d[0],d[3]));
+ctx.fillRect(x-3,top,6,Math.max(2,bottom-top));
 });
 }
 
 function analyze(){
-let highs=candles.map(v=>v[1]);
-let lows=candles.map(v=>v[2]);
-let last=candles[candles.length-1];
-let previous=candles.slice(-6,-1);
-let recentHigh=Math.max(...previous.map(v=>v[1]));
-let recentLow=Math.min(...previous.map(v=>v[2]));
+const n=candles.length;
+const last=candles[n-1];
+let highs=[],lows=[];
 
-let trend=last[3]>candles[0][0]?"Bullish":"Bearish";
-let sweepHigh=last[1]>recentHigh&&last[3]<recentHigh;
-let sweepLow=last[2]<recentLow&&last[3]>recentLow;
-
-let liquidity=sweepHigh?"Buy-side swept":
-sweepLow?"Sell-side swept":"No confirmed sweep";
-
-let signal=sweepLow?"POSSIBLE BUY":
-sweepHigh?"POSSIBLE SELL":"WAIT";
-
-document.getElementById("trend").textContent=trend;
-document.getElementById("liq").textContent=liquidity;
-document.getElementById("structure").textContent=
-last[3]>recentHigh?"Possible BOS Up":
-last[3]<recentLow?"Possible BOS Down":"No BOS";
-document.getElementById("ob").textContent="Demo zone — inspect chart";
-document.getElementById("fvg").textContent="Needs gap confirmation";
-document.getElementById("signal").textContent=signal;
-document.getElementById("entry").textContent=
-"Entry: Wait for confirmation";
-document.getElementById("sl").textContent=
-"Stop Loss: Not calculated";
-document.getElementById("target").textContent=
-"Target: Not calculated";
-document.getElementById("reason").textContent=
-"Market: "+document.getElementById("market").value+
-" | Timeframe: "+document.getElementById("tf").value+
-". Demo data only. Do not trade using this signal.";
+// Find swing highs and swing lows
+for(let i=2;i<n-2;i++){
+let high=true,low=true;
+for(let j=i-2;j<=i+2;j++){
+if(j===i)continue;
+if(candles[j][1]>=candles[i][1])high=false;
+if(candles[j][2]<=candles[i][2])low=false;
 }
+if(high)highs.push({price:candles[i][1],index:i});
+if(low)lows.push({price:candles[i][2],index:i});
+}
+
+let sh=highs.length?highs[highs.length-1].price:null;
+let sl=lows.length?lows[lows.length-1].price:null;
+let priorHigh=highs.length>1?highs[highs.length-2].price:null;
+let priorLow=lows.length>1?lows[lows.length-2].price:null;
+
+let trend=last[3]>candles[n-5][3]?"Bullish":"Bearish";
+let bullSweep=sl!==null && last[2]<sl && last[3]>sl;
+let bearSweep=sh!==null && last[1]>sh && last[3]<sh;
+
+let bosUp=priorHigh!==null && last[3]>priorHigh;
+let bosDown=priorLow!==null && last[3]<priorLow;
+
+let structure="No BOS";
+if(bosUp)structure="Bullish BOS";
+if(bosDown)structure="Bearish BOS";
+if(bullSweep && bosUp)structure="Bullish CHoCH / BOS";
+if(bearSweep && bosDown)structure="Bearish CHoCH / BOS";
+
+// Fair Value Gap: three-candle imbalance
+let gap="No confirmed FVG";
+let gapType="";
+let gapLow=0,gapHigh=0;
+for(let i=n-1;i>=2;i--){
+if(candles[i][2]>candles[i-2][1]){
+gap="Bullish FVG";gapType="Bullish";
+gapLow=candles[i-2][1];gapHigh=candles[i][2];break;
+}
+if(candles[i][1]<candles[i-2][2]){
+gap="Bearish FVG";gapType="Bearish";
+gapLow=candles[i][1];gapHigh=candles[i-2][2];break;
+}
+}
+
+// Approximate last opposite candle as an OB candidate
+let ob="No clear OB";
+for(let i=n-2;i>=1;i--){
+if(last[3]>last[0] && candles[i][3]<candles[i][0]){
+ob="Bullish OB candidate";break;
+}
+if(last[3]<last[0] && candles[i][3]>candles[i][0]){
+ob="Bearish OB candidate";break;
+}
+}
+
+let liquidity="No confirmed sweep";
+if(bullSweep)liquidity="Sell-side sweep";
+if(bearSweep)liquidity="Buy-side sweep";
+
+let signal="WAIT";
+if(bullSweep && bosUp)signal="BUY SETUP";
+if(bearSweep && bosDown)signal="SELL SETUP";
+
+el("trend").textContent=trend;
+el("liq").textContent=liquidity;
+el("structure").textContent=structure;
+el("ob").textContent=ob;
+el("fvg").textContent=gap;
+el("signal").textContent=signal;
+el("signal").className=signal==="BUY SETUP"?"green":signal==="SELL SETUP"?"red":"";
+
+el("bsl").textContent=sh===null?"--":fmt(sh);
+el("ssl").textContent=sl===null?"--":fmt(sl);
+el("support").textContent=sl===null?"--":fmt(sl);
+el("resistance").textContent=sh===null?"--":fmt(sh);
+
+el("entry").textContent="Entry: Confirmation required";
+el("sl").textContent="Stop Loss: Not calculated";
+el("target").textContent="Target: Not calculated";
+
+el("reason").textContent=
+"Market: "+el("market").value+
+" | Timeframe: "+el("tf").value+
+". Demo data only. "+
+(signal==="WAIT"?"No complete setup confirmed.":"Potential setup; verify live chart and risk before trading.");
+
+draw();
+}
+window.addEventListener("resize",draw);
 draw();
 </script>
 </body>
